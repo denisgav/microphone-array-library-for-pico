@@ -1,0 +1,46 @@
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+
+.program sk9822_mini
+.side_set 1
+
+; This is really just a TX-only SPI. CLK is side-set pin 0, DIN is OUT pin 0.
+; Autopull enabled, threshold 32.
+;
+; Every word (32 bits) written to the FIFO will be shifted out in its entirety, MSB-first.
+.wrap_target
+    set x, 31     side 1
+    pull          side 1; take data from the FIFO
+bit_pass_loop:
+    ; Stall here when no data (still asserts clock low)
+    out pins, 1   side 1
+    jmp x--, bit_pass_loop  side 0
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+static inline void sk9822_mini_program_init(PIO pio, uint sm, uint offset,
+        uint baud, uint pin_clk, uint pin_din) {
+    pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_clk) | (1u << pin_din));
+    pio_sm_set_pindirs_with_mask(pio, sm, ~0u, (1u << pin_clk) | (1u << pin_din));
+    pio_gpio_init(pio, pin_clk);
+    pio_gpio_init(pio, pin_din);
+
+    pio_sm_config c = sk9822_mini_program_get_default_config(offset);
+    sm_config_set_out_pins(&c, pin_din, 1);
+    sm_config_set_sideset_pins(&c, pin_clk);
+    // Shift to right, autopull with threshold 32
+    sm_config_set_out_shift(&c, false, true, 32);
+    // Deeper FIFO as we're not doing any RX
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    // We transmit 1 bit every 2 execution cycles
+    float div = (float)clock_get_hz(clk_sys) / (2 * baud);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
