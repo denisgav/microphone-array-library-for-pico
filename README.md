@@ -15,7 +15,7 @@ Capture audio from a microphone array on your [Raspberry Pi Pico](https://www.ra
 ### Default Pinout
 
 | Raspberry Pi Pico / RP2040 | Microphone | Configuration Define |
-| --- | --- |
+| --- | --- | --- |
 | MIC_CK | 0 | PIN_SCK |
 | MIC_WS | 1 | PIN_WS = PIN_SCK + 1 |
 | MIC_D0 | 2 | PIN_SD0 |
