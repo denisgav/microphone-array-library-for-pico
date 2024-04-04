@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  * 
- * This examples captures data from a PDM microphone using a sample
+ * This examples captures data from a I2S microphone using a sample
  * rate of 8 kHz and prints the sample values over the USB serial
  * connection.
  */
